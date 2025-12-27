@@ -1,0 +1,56 @@
+package http_server
+
+import (
+	_ "gateway/docs"
+	"gateway/external/httpClient"
+	myMiddleware "gateway/internal/http-server/middleware"
+
+	echoSwagger "github.com/swaggo/echo-swagger"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+)
+
+type HandlersAuth interface {
+	Register(c echo.Context) error
+	Login(c echo.Context) error
+	Verify(c echo.Context) error
+	Logout(c echo.Context) error
+}
+
+type HandlersNoteFlow interface {
+	Notes(c echo.Context) error
+	Note(c echo.Context) error
+	NoteActive(c echo.Context) error
+	CreateNote(c echo.Context) error
+}
+
+func RegisterRoutes(
+	prefix string,
+	e *echo.Echo,
+	handlerAuth HandlersAuth,
+	handlerNoteFlow HandlersNoteFlow,
+	client *httpClient.APIClient,
+	authBaseURL string,
+) {
+	e.Use(middleware.RequestLogger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
+
+	api := e.Group(prefix)
+
+	api.GET("/docs/*", echoSwagger.WrapHandler)
+	api.POST("/auth/register", handlerAuth.Register)
+	api.POST("/auth/login", handlerAuth.Login)
+	api.GET("/auth/verify", handlerAuth.Verify)
+	api.DELETE("/auth/logout", handlerAuth.Logout)
+
+	noteGroup := api.Group("/note-flow")
+	noteGroup.Use(myMiddleware.JWTAuthMiddleware(client, authBaseURL))
+
+	noteGroup.GET("/notes", handlerNoteFlow.Notes)
+	noteGroup.GET("/note/:note_id", handlerNoteFlow.Note)
+	noteGroup.PUT("/note/active", handlerNoteFlow.NoteActive)
+	noteGroup.POST("/note", handlerNoteFlow.CreateNote)
+
+}

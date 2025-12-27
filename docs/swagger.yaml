@@ -1,0 +1,246 @@
+definitions:
+  auth.LoginResponse:
+    properties:
+      access_token:
+        type: string
+      token_type:
+        type: string
+    type: object
+  auth.RegisterRequest:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  auth.RegisterResponse:
+    properties:
+      user_id:
+        type: integer
+    type: object
+  note_flow.CreateNoteRequest:
+    properties:
+      content:
+        type: string
+      title:
+        type: string
+    type: object
+  note_flow.CreateNoteResponse:
+    properties:
+      id:
+        type: integer
+    type: object
+  note_flow.NotesResponse:
+    properties:
+      content:
+        type: string
+      id:
+        type: integer
+      title:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Сервис для проксирования http запросов.
+  title: Gateway
+  version: "1.0"
+paths:
+  /gateway/api/v1/auth/login:
+    post:
+      description: Проиксирует запрос по пути /login
+      parameters:
+      - description: Данные запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.LoginResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            type: string
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Аутентификация пользователя
+      tags:
+      - auth
+  /gateway/api/v1/auth/logout:
+    delete:
+      description: Проксирует запрос по пути /logout
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "204":
+          description: OK
+          schema:
+            type: string
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Выход пользователя
+      tags:
+      - auth
+  /gateway/api/v1/auth/register:
+    post:
+      description: Проксирует запрос по пути /register
+      parameters:
+      - description: Данные запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/auth.RegisterRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.RegisterResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            type: string
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Регистрация нового пользователя
+      tags:
+      - auth
+  /gateway/api/v1/auth/verify:
+    get:
+      description: Проксирует запрос по пути /verify
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Проверка верификации пользователя
+      tags:
+      - auth
+  /gateway/api/v1/note-flow/note:
+    post:
+      description: Проксирует запрос по пути /note
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Данные запроса
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/note_flow.CreateNoteRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/note_flow.CreateNoteResponse'
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Создание заметки
+      tags:
+      - note-flow
+  /gateway/api/v1/note-flow/note/{note_id}:
+    get:
+      description: Проксирует запрос по пути /note/{note_id}
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID заметки
+        in: path
+        name: note_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/note_flow.NotesResponse'
+        "400":
+          description: Неверный ID
+          schema:
+            type: string
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Получение заметки по ID
+      tags:
+      - note-flow
+  /gateway/api/v1/note-flow/note/active:
+    put:
+      description: Проксирует запрос по пути /note/active
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID заметки
+        in: query
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Пометить заметку как не активную
+      tags:
+      - note-flow
+  /gateway/api/v1/note-flow/notes:
+    get:
+      description: Проксирует запрос по пути /notes
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/note_flow.NotesResponse'
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Получить все активные заметки
+      tags:
+      - note-flow
+swagger: "2.0"
