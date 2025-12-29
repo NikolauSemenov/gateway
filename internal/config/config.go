@@ -35,6 +35,7 @@ type HTTPServer struct {
 	IdleTimeout time.Duration `env-default:"60s" env:"IDLE_TIMEOUT"`
 	Prefix      string        `env:"API_PREFIX" env-default:"gateway"`
 	AppVersion  string        `env:"APP_VERSION" env-default:"v1"`
+	SizeLimit   int64         `env:"LIMIT_READ" env-default:"65536"`
 }
 
 func (h *HTTPServer) APIPrefix() string {

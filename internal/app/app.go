@@ -6,7 +6,7 @@ import (
 	"gateway/internal/config"
 	httpserver "gateway/internal/http-server"
 	"gateway/internal/http-server/auth"
-	note_flow "gateway/internal/http-server/note-flow"
+	noteflow "gateway/internal/http-server/note-flow"
 
 	"github.com/labstack/echo/v4"
 )
@@ -25,9 +25,9 @@ func NewApp() (*App, error) {
 
 	web := echo.New()
 
-	clientHttp := httpClient.NewAPIClient(configApp.Timeout)
+	clientHttp := httpClient.NewAPIClient(configApp)
 	handlersAuth := auth.NewAuth(configApp, clientHttp)
-	handlersNoteFlow := note_flow.NewNoteFlow(configApp, clientHttp)
+	handlersNoteFlow := noteflow.NewNoteFlow(configApp, clientHttp)
 	httpserver.RegisterRoutes(
 		configApp.APIPrefix(),
 		web,

@@ -3,7 +3,6 @@ package http_server
 import (
 	_ "gateway/docs"
 	"gateway/external/httpClient"
-	myMiddleware "gateway/internal/http-server/middleware"
 
 	echoSwagger "github.com/swaggo/echo-swagger"
 
@@ -46,7 +45,7 @@ func RegisterRoutes(
 	api.DELETE("/auth/logout", handlerAuth.Logout)
 
 	noteGroup := api.Group("/note-flow")
-	noteGroup.Use(myMiddleware.JWTAuthMiddleware(client, authBaseURL))
+	//noteGroup.Use(myMiddleware.JWTAuthMiddleware(client, authBaseURL))
 
 	noteGroup.GET("/notes", handlerNoteFlow.Notes)
 	noteGroup.GET("/note/:note_id", handlerNoteFlow.Note)

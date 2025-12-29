@@ -5,54 +5,51 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"gateway/internal/config"
 	"io"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 type APIClient struct {
-	http *http.Client
+	http      *http.Client
+	configApp *config.Config
 }
 
-func NewAPIClient(timeout time.Duration) *APIClient {
-	if timeout <= 0 {
-		timeout = 5 * time.Second
-	}
-
+func NewAPIClient(configApp *config.Config) *APIClient {
 	return &APIClient{
 		http: &http.Client{
-			Timeout: timeout,
+			Timeout: configApp.Timeout,
 		},
+		configApp: configApp,
 	}
 }
 
-func (a *APIClient) MakeRequest(
-	ctx context.Context,
-	r RequestOptions,
-) (*http.Response, error) {
-
+func (a *APIClient) MakeRequest(ctx context.Context, r RequestOptions) (*http.Response, error) {
 	res, err := a.do(ctx, r)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func() {
+		_, _ = io.Copy(io.Discard, res.Body)
+		_ = res.Body.Close()
+	}()
 
 	if res.StatusCode >= http.StatusBadRequest {
-		body, _ := io.ReadAll(io.LimitReader(res.Body, 64<<10))
-		// TODO: Поправить возврат ошибок, сейчас передаются как байты обернутые в строки
+		body, err := io.ReadAll(io.LimitReader(res.Body, a.configApp.SizeLimit))
+		if err != nil {
+			return res, fmt.Errorf("failed to read error body: %w", err)
+		}
 		return res, errors.New(string(body))
 	}
-
-	if res.ContentLength == 0 {
+	if r.Response == nil || res.ContentLength == 0 {
 		return res, nil
 	}
 
-	if r.Response != nil {
-		dec := json.NewDecoder(io.LimitReader(res.Body, 1<<20))
-		if err = dec.Decode(r.Response); err != nil {
-			return res, err
-		}
+	dec := json.NewDecoder(io.LimitReader(res.Body, a.configApp.SizeLimit))
+	if err := dec.Decode(r.Response); err != nil {
+		return res, fmt.Errorf("failed to decode JSON response: %w", err)
 	}
 
 	return res, nil
@@ -85,17 +82,12 @@ func (a *APIClient) do(ctx context.Context, r RequestOptions) (*http.Response, e
 	if r.Body != nil {
 		b, err := json.Marshal(r.Body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to marshal body: %w", err)
 		}
 		body = bytes.NewReader(b)
 	}
 
-	req, err := http.NewRequestWithContext(
-		ctx,
-		r.Method,
-		parsedURL.String(),
-		body,
-	)
+	req, err := http.NewRequestWithContext(ctx, r.Method, parsedURL.String(), body)
 	if err != nil {
 		return nil, err
 	}

@@ -25,13 +25,12 @@ func NewAuth(config *config.Config, clientHttp *httpClient.APIClient) *Auth {
 // @Description Проксирует запрос по пути /register
 // @Tags auth
 // @Param request body RegisterRequest true "Данные запроса"
-// @Success 201 {object} RegisterResponse "Created"
+// @Success 201 {string} string "Created"
 // @Failure 400 {string} string "Неверный запрос"
 // @Failure 422 {string} string "Ошибка валидации"
 // @Router /gateway/api/v1/auth/register [post]
 func (a *Auth) Register(c echo.Context) error {
 	var req RegisterRequest
-	var resp RegisterResponse
 
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, nil)
@@ -40,10 +39,9 @@ func (a *Auth) Register(c echo.Context) error {
 	httpRes, err := a.clientHttp.MakeRequest(
 		c.Request().Context(),
 		httpClient.RequestOptions{
-			Method:   http.MethodPost,
-			URL:      a.config.BaseUrl + a.config.V1Register,
-			Body:     req,
-			Response: &resp,
+			Method: http.MethodPost,
+			URL:    a.config.BaseUrl + a.config.V1Register,
+			Body:   req,
 		},
 	)
 	if err != nil {
@@ -52,7 +50,7 @@ func (a *Auth) Register(c echo.Context) error {
 		}
 		return c.JSON(http.StatusServiceUnavailable, "Server unavailable")
 	}
-	return c.JSON(httpRes.StatusCode, resp)
+	return c.JSON(httpRes.StatusCode, "Запрос на регистрацию отправлен")
 }
 
 // Login обрабатывает запрос на /login

@@ -114,7 +114,7 @@ func (a *NoteFlow) NoteActive(c echo.Context) error {
 }
 
 // CreateNote обрабатывает запрос на /note
-// @Summary Создание заметки
+// @Summary Создать заметку
 // @Description Проксирует запрос по пути /note
 // @Tags note-flow
 // @Param Authorization header string true "Bearer token"

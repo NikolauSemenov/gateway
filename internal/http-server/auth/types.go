@@ -5,10 +5,6 @@ type RegisterRequest struct {
 	Password string `json:"password"`
 }
 
-type RegisterResponse struct {
-	UserID int `json:"user_id"`
-}
-
 type LoginResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
