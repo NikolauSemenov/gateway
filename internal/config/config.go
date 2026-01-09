@@ -15,18 +15,22 @@ type Config struct {
 }
 
 type AuthConfig struct {
-	BaseUrl    string `env:"BASE_URL" env-default:"http://localhost:8084/auth/api"`
-	V1Register string `env:"V1_REGISTER" env-default:"/v1/register"`
-	V1Login    string `env:"V1_LOGIN" env-default:"/v1/login"`
-	V1Verify   string `env:"V1_LOGIN" env-default:"/v1/verify"`
-	V1Logout   string `env:"V1_LOGOUT" env-default:"/v1/logout"`
+	BaseUrl         string `env:"BASE_URL" env-default:"http://localhost:8084/auth/api"`
+	V1Register      string `env:"V1_REGISTER" env-default:"/v1/register"`
+	V1Login         string `env:"V1_LOGIN" env-default:"/v1/login"`
+	V1Verify        string `env:"V1_LOGIN" env-default:"/v1/verify"`
+	V1Logout        string `env:"V1_LOGOUT" env-default:"/v1/logout"`
+	V1SendEmailCode string `env:"V1_SEND_EMAIL_CODE" env-default:"/v1/send-email-code"`
+	V1VerifyEmail   string `env:"V1_VERIFY_EMAIL" env-default:"/v1/verify-email-code"`
 }
 
 type NoteFlowConfig struct {
-	BaseUrlNotes string `env:"BASE_URL" env-default:"http://localhost:8083/note-flow/api"`
-	V1Notes      string `env:"V1_REGISTER" env-default:"/v1/notes"`
-	V1Note       string `env:"V1_NOTE" env-default:"/v1/note"`
-	V1NoteActive string `env:"V1_NOTE_ACTIVE" env-default:"/v1/note/active"`
+	BaseUrlNotes  string `env:"BASE_URL" env-default:"http://localhost:8083/note-flow/api"`
+	V1Notes       string `env:"V1_REGISTER" env-default:"/v1/notes"`
+	V1Note        string `env:"V1_NOTE" env-default:"/v1/note"`
+	V1NoteActive  string `env:"V1_NOTE_ACTIVE" env-default:"/v1/note/active"`
+	V1NoteLike    string `env:"V1_NOTE_LIKE" env-default:"/v1/note/like"`
+	V1NoteComment string `env:"V1_NOTE_COMMENT" env-default:"/v1/note/comment"`
 }
 
 type HTTPServer struct {

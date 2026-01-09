@@ -20,6 +20,73 @@ func NewAuth(config *config.Config, clientHttp *httpClient.APIClient) *Auth {
 	}
 }
 
+// SendEmailCode обрабатывает запрос на /send-email-code
+// @Summary Отправка кода на email
+// @Description Проксирует запрос по пути /send-email-code
+// @Tags auth
+// @Param request body SendEmailCodeRequest true "Данные запроса"
+// @Success 200 {string} string "OK"
+// @Failure 400 {string} string "Неверный запрос"
+// @Failure 422 {string} string "Ошибка валидации"
+// @Router /gateway/api/v1/auth/send-email-code [post]
+func (a *Auth) SendEmailCode(c echo.Context) error {
+	var req SendEmailCodeRequest
+
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, nil)
+	}
+
+	httpRes, err := a.clientHttp.MakeRequest(
+		c.Request().Context(),
+		httpClient.RequestOptions{
+			Method: http.MethodPost,
+			URL:    a.config.BaseUrl + a.config.V1SendEmailCode,
+			Body:   req,
+		},
+	)
+	if err != nil {
+		if httpRes != nil {
+			return c.JSON(httpRes.StatusCode, err.Error())
+		}
+		return c.JSON(http.StatusServiceUnavailable, "Server unavailable")
+	}
+	return c.JSON(httpRes.StatusCode, "Запрос на отправку кода отправлен")
+}
+
+// VerifyEmailCode обрабатывает запрос на /verify-email-code
+// @Summary Проверка кода, отправленного на email
+// @Description Проксирует запрос по пути /verify-email-code
+// @Tags auth
+// @Param request body VerifyEmailCodeRequest true "Данные запроса"
+// @Success 200 {object} VerifyEmailCodeResponse "OK"
+// @Failure 400 {string} string "Неверный запрос"
+// @Failure 422 {string} string "Ошибка валидации"
+// @Router /gateway/api/v1/auth/verify-email-code [put]
+func (a *Auth) VerifyEmailCode(c echo.Context) error {
+	var req VerifyEmailCodeRequest
+	var resp VerifyEmailCodeResponse
+
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, nil)
+	}
+	httpRes, err := a.clientHttp.MakeRequest(
+		c.Request().Context(),
+		httpClient.RequestOptions{
+			Method:   http.MethodPut,
+			URL:      a.config.BaseUrl + a.config.V1VerifyEmail,
+			Body:     req,
+			Response: &resp,
+		},
+	)
+	if err != nil {
+		if httpRes != nil {
+			return c.JSON(httpRes.StatusCode, err.Error())
+		}
+		return c.JSON(http.StatusServiceUnavailable, "Server unavailable")
+	}
+	return c.JSON(httpRes.StatusCode, resp)
+}
+
 // Register обрабатывает запрос на /register
 // @Summary Регистрация нового пользователя
 // @Description Проксирует запрос по пути /register
@@ -57,13 +124,13 @@ func (a *Auth) Register(c echo.Context) error {
 // @Summary Аутентификация пользователя
 // @Description Проиксирует запрос по пути /login
 // @Tags auth
-// @Param request body RegisterRequest true "Данные запроса"
+// @Param request body LoginRequest true "Данные запроса"
 // @Success 200 {object} LoginResponse "OK"
 // @Failure 400 {string} string "Неверный запрос"
 // @Failure 422 {string} string "Ошибка валидации"
 // @Router /gateway/api/v1/auth/login [post]
 func (a *Auth) Login(c echo.Context) error {
-	var req RegisterRequest
+	var req LoginRequest
 	var resp LoginResponse
 
 	if err := c.Bind(&req); err != nil {

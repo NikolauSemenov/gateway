@@ -29,7 +29,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.RegisterRequest"
+                            "$ref": "#/definitions/auth.LoginRequest"
                         }
                     }
                 ],
@@ -109,7 +109,47 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/auth.RegisterResponse"
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/gateway/api/v1/auth/send-email-code": {
+            "post": {
+                "description": "Проксирует запрос по пути /send-email-code",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Отправка кода на email",
+                "parameters": [
+                    {
+                        "description": "Данные запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.SendEmailCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "400": {
@@ -159,13 +199,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/gateway/api/v1/auth/verify-email-code": {
+            "put": {
+                "description": "Проксирует запрос по пути /verify-email-code",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Проверка кода, отправленного на email",
+                "parameters": [
+                    {
+                        "description": "Данные запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.VerifyEmailCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/auth.VerifyEmailCodeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/gateway/api/v1/note-flow/note": {
             "post": {
                 "description": "Проксирует запрос по пути /note",
                 "tags": [
                     "note-flow"
                 ],
-                "summary": "Создание заметки",
+                "summary": "Создать заметку",
                 "parameters": [
                     {
                         "type": "string",
@@ -226,6 +306,94 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/gateway/api/v1/note-flow/note/comment": {
+            "post": {
+                "description": "Проксирует запрос по пути /note/comments",
+                "tags": [
+                    "Comments"
+                ],
+                "summary": "Создать комментарий",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/note_flow.NoteCommentsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/note_flow.NoteCommentsResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/gateway/api/v1/note-flow/note/like": {
+            "post": {
+                "description": "Проксирует запрос по пути /note/like",
+                "tags": [
+                    "likes"
+                ],
+                "summary": "Лайкнуть заметку",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные запроса",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/note_flow.LikeNoteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/note_flow.LikeNoteResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
                         "schema": {
                             "type": "string"
                         }
@@ -318,21 +486,10 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "auth.LoginResponse": {
+        "auth.LoginRequest": {
             "type": "object",
             "properties": {
-                "access_token": {
-                    "type": "string"
-                },
-                "token_type": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.RegisterRequest": {
-            "type": "object",
-            "properties": {
-                "name": {
+                "login": {
                     "type": "string"
                 },
                 "password": {
@@ -340,11 +497,76 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.RegisterResponse": {
+        "auth.LoginResponse": {
             "type": "object",
             "properties": {
-                "user_id": {
-                    "type": "integer"
+                "access_token": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "token_type": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.SendEmailCodeRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.VerifyEmailCodeRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.VerifyEmailCodeResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "token_type": {
+                    "type": "string"
+                },
+                "user_name": {
+                    "type": "string"
                 }
             }
         },
@@ -352,6 +574,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "content": {
+                    "type": "string"
+                },
+                "full_name": {
                     "type": "string"
                 },
                 "title": {
@@ -367,17 +592,79 @@ const docTemplate = `{
                 }
             }
         },
+        "note_flow.LikeNoteRequest": {
+            "type": "object",
+            "properties": {
+                "note_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "note_flow.LikeNoteResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "note_flow.NoteCommentsRequest": {
+            "type": "object",
+            "properties": {
+                "note_id": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "user_full_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "note_flow.NoteCommentsResponse": {
+            "type": "object",
+            "properties": {
+                "Id": {
+                    "type": "integer"
+                }
+            }
+        },
         "note_flow.NotesResponse": {
             "type": "object",
             "properties": {
+                "comment_by_user_id": {
+                    "type": "integer"
+                },
+                "comment_by_user_name": {
+                    "type": "string"
+                },
+                "comment_id": {
+                    "type": "integer"
+                },
+                "comment_text": {
+                    "type": "string"
+                },
                 "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "full_name": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
                 },
+                "likes": {
+                    "type": "integer"
+                },
                 "title": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         }
