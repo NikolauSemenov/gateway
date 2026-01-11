@@ -7,9 +7,9 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o myapp ./cmd/app
+RUN go build -o buildApp ./cmd/app
 
-EXPOSE 8086
+EXPOSE 8080
 
 # Команда запуска
-CMD ["./myapp"]
+CMD ["./buildApp"]
