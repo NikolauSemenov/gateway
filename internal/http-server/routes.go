@@ -4,6 +4,7 @@ import (
 	_ "gateway/docs"
 	"gateway/external/httpClient"
 	myMiddleware "gateway/internal/http-server/middleware"
+	"net/http"
 
 	echoSwagger "github.com/swaggo/echo-swagger"
 
@@ -48,6 +49,9 @@ func RegisterRoutes(
 	api.POST("/auth/register", handlerAuth.Register)
 	api.POST("/auth/login", handlerAuth.Login)
 	api.DELETE("/auth/logout", handlerAuth.Logout)
+	api.GET("/health", func(c echo.Context) error {
+		return c.NoContent(http.StatusOK)
+	})
 
 	noteGroup := api.Group("/note-flow")
 	noteGroup.Use(myMiddleware.JWTAuthMiddleware(client, authBaseURL))
