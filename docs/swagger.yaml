@@ -53,6 +53,17 @@ definitions:
       user_name:
         type: string
     type: object
+  note_flow.CommentsRequest:
+    properties:
+      comment_id:
+        type: integer
+      text:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
   note_flow.CreateNoteRequest:
     properties:
       content:
@@ -93,14 +104,10 @@ definitions:
     type: object
   note_flow.NotesResponse:
     properties:
-      comment_by_user_id:
-        type: integer
-      comment_by_user_name:
-        type: string
-      comment_id:
-        type: integer
-      comment_text:
-        type: string
+      comments:
+        items:
+          $ref: '#/definitions/note_flow.CommentsRequest'
+        type: array
       content:
         type: string
       created_at:

@@ -1,5 +1,20 @@
 package note_flow
 
+const (
+	headerUserID           = "X-User-ID"
+	queryUserID            = "user_id"
+	msgInvalidBody         = "Invalid request body"
+	msgNoteFlowUnavailable = "Note-flow service unavailable"
+	msgUserNotAuthorized   = "User not authorized"
+	logKeyOp               = "op"
+	logKeyStatus           = "status"
+	logKeyErr              = "err"
+	logKeyUpstreamURL      = "upstream_url"
+	logKeyNoteID           = "note_id"
+	logKeyID               = "id"
+	logKeyHasAuthHeader    = "has_auth_header"
+)
+
 type CommentsRequest struct {
 	Text      string `json:"text"`
 	CommentId int    `json:"comment_id"`

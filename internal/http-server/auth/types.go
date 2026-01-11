@@ -39,3 +39,14 @@ type VerifyEmailCodeResponse struct {
 type VerifyRequest struct {
 	Authorization string `json:"Authorization"`
 }
+
+const (
+	msgInvalidBody          = "Invalid request body"
+	msgAuthUnavailable      = "Auth service unavailable"
+	msgEmailCodeSent        = "Email verification code sent"
+	msgRegistrationSent     = "Registration request sent"
+	logKeyStatus            = "status"
+	logKeyErr               = "err"
+	logKeyUpstreamURL       = "upstream_url"
+	logKeyAuthorizationHint = "has_auth_header"
+)

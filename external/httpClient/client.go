@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type APIClient struct {
@@ -18,11 +19,28 @@ type APIClient struct {
 }
 
 func NewAPIClient(configApp *config.Config) *APIClient {
+	timeout := configApp.Timeout
+	if timeout <= 0 {
+		// Safe fallback: avoid "no timeout" footgun.
+		timeout = 5 * time.Second
+	}
+
+	sizeLimit := configApp.SizeLimit
+	if sizeLimit <= 0 {
+		// Safe fallback: avoid "unlimited reads" footgun.
+		sizeLimit = 64 * 1024
+	}
+
+	// Keep the adjusted values inside the client so size limits/timeouts are enforced even if config is misconfigured.
+	cfg := *configApp
+	cfg.Timeout = timeout
+	cfg.SizeLimit = sizeLimit
+
 	return &APIClient{
 		http: &http.Client{
-			Timeout: configApp.Timeout,
+			Timeout: timeout,
 		},
-		configApp: configApp,
+		configApp: &cfg,
 	}
 }
 
@@ -32,10 +50,12 @@ func (a *APIClient) MakeRequest(ctx context.Context, r RequestOptions) (*http.Re
 		return nil, err
 	}
 	defer func() {
+		// Drain body so underlying transport can reuse the connection.
 		_, _ = io.Copy(io.Discard, res.Body)
 		_ = res.Body.Close()
 	}()
 
+	// Error responses: read limited body and return it as an error message (trimmed).
 	if res.StatusCode >= http.StatusBadRequest {
 		body, err := io.ReadAll(io.LimitReader(res.Body, a.configApp.SizeLimit))
 		if err != nil {
@@ -43,12 +63,26 @@ func (a *APIClient) MakeRequest(ctx context.Context, r RequestOptions) (*http.Re
 		}
 		return res, errors.New(string(body))
 	}
-	if r.Response == nil || res.ContentLength == 0 {
+
+	// If caller didn't provide a response target, do not attempt to decode.
+	// Also handle "unknown length" responses: ContentLength may be -1, so don't rely only on ContentLength==0.
+	if r.Response == nil {
 		return res, nil
 	}
 
+	// Decode JSON safely with size limit and strictness.
 	dec := json.NewDecoder(io.LimitReader(res.Body, a.configApp.SizeLimit))
+	dec.DisallowUnknownFields()
 	if err := dec.Decode(r.Response); err != nil {
+		// Treat empty body as OK (common for 204/empty 200s).
+		if errors.Is(err, io.EOF) {
+			return res, nil
+		}
+		return res, fmt.Errorf("failed to decode JSON response: %w", err)
+	}
+
+	// Ensure there's no trailing junk (e.g., multiple JSON values).
+	if err := ensureNoTrailingJSON(dec); err != nil {
 		return res, fmt.Errorf("failed to decode JSON response: %w", err)
 	}
 
@@ -66,6 +100,19 @@ func (a *APIClient) do(ctx context.Context, r RequestOptions) (*http.Response, e
 	parsedURL, err := url.Parse(r.URL)
 	if err != nil {
 		return nil, err
+	}
+
+	// Hardening: prevent SSRF-style surprises via non-http schemes.
+	switch parsedURL.Scheme {
+	case "http", "https":
+		// ok
+	default:
+		return nil, fmt.Errorf("unsupported url scheme: %q", parsedURL.Scheme)
+	}
+
+	// Hardening: require a host.
+	if parsedURL.Host == "" {
+		return nil, fmt.Errorf("missing url host")
 	}
 
 	if len(r.Query) > 0 {
@@ -96,9 +143,29 @@ func (a *APIClient) do(ctx context.Context, r RequestOptions) (*http.Response, e
 		req.Header = r.Headers.Clone()
 	}
 
+	// Default content type for JSON bodies.
 	if r.Body != nil && req.Header.Get("Content-Type") == "" {
 		req.Header.Set("Content-Type", "application/json")
 	}
 
+	// Default accept header (helps some APIs return JSON consistently).
+	if req.Header.Get("Accept") == "" {
+		req.Header.Set("Accept", "application/json")
+	}
+
 	return a.http.Do(req)
+}
+
+// ensureNoTrailingJSON verifies the decoder is at EOF after the first JSON value.
+// This prevents accepting responses like: {"ok":true}{"evil":true}
+func ensureNoTrailingJSON(dec *json.Decoder) error {
+	var extra any
+	err := dec.Decode(&extra)
+	if err == nil {
+		return errors.New("unexpected trailing data after JSON value")
+	}
+	if errors.Is(err, io.EOF) {
+		return nil
+	}
+	return err
 }

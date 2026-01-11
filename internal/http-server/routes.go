@@ -1,10 +1,15 @@
 package http_server
 
 import (
+	"context"
 	_ "gateway/docs"
-	"gateway/external/httpClient"
-	myMiddleware "gateway/internal/http-server/middleware"
 	"net/http"
+
+	"gateway/external/httpClient"
+	"gateway/internal/http-server/auth"
+	myMiddleware "gateway/internal/http-server/middleware"
+	noteflow "gateway/internal/http-server/note-flow"
+	"log/slog"
 
 	echoSwagger "github.com/swaggo/echo-swagger"
 
@@ -29,14 +34,25 @@ type HandlersNoteFlow interface {
 	NoteComments(c echo.Context) error
 }
 
+type Doer interface {
+	MakeRequest(ctx context.Context, r httpClient.RequestOptions) (*http.Response, error)
+}
+
 func RegisterRoutes(
 	prefix string,
 	e *echo.Echo,
 	handlerAuth HandlersAuth,
 	handlerNoteFlow HandlersNoteFlow,
-	client *httpClient.APIClient,
+	client Doer,
 	authBaseURL string,
+	baseLogger *slog.Logger,
 ) {
+	if baseLogger == nil {
+		baseLogger = slog.Default()
+	}
+
+	e.Use(myMiddleware.RequestIDMiddleware(baseLogger))
+
 	e.Use(middleware.RequestLogger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
@@ -44,16 +60,21 @@ func RegisterRoutes(
 	api := e.Group(prefix)
 
 	api.GET("/docs/*", echoSwagger.WrapHandler)
-	api.POST("/auth/send-email-code", handlerAuth.SendEmailCode)
-	api.PUT("/auth/verify-email-code", handlerAuth.VerifyEmailCode)
-	api.POST("/auth/register", handlerAuth.Register)
-	api.POST("/auth/login", handlerAuth.Login)
-	api.DELETE("/auth/logout", handlerAuth.Logout)
+
+	authGroup := api.Group("/auth")
+	authGroup.Use(auth.LoggingMiddlewareAuth(baseLogger))
+	authGroup.POST("/send-email-code", handlerAuth.SendEmailCode)
+	authGroup.PUT("/verify-email-code", handlerAuth.VerifyEmailCode)
+	authGroup.POST("/register", handlerAuth.Register)
+	authGroup.POST("/login", handlerAuth.Login)
+	authGroup.DELETE("/logout", handlerAuth.Logout)
+
 	api.GET("/health", func(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
 
 	noteGroup := api.Group("/note-flow")
+	noteGroup.Use(noteflow.LoggingMiddlewareNoteFlow(baseLogger))
 	noteGroup.Use(myMiddleware.JWTAuthMiddleware(client, authBaseURL))
 
 	noteGroup.GET("/notes", handlerNoteFlow.Notes)

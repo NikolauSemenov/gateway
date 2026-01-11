@@ -1,24 +1,106 @@
 package auth
 
 import (
+	"context"
+	"net/http"
+	"strings"
+
 	"gateway/external/httpClient"
 	"gateway/internal/config"
-	"net/http"
+	"gateway/internal/http-server/common"
 
 	"github.com/labstack/echo/v4"
 )
 
-type Auth struct {
-	clientHttp *httpClient.APIClient
-	config     *config.Config
+type Doer interface {
+	MakeRequest(ctx context.Context, r httpClient.RequestOptions) (*http.Response, error)
 }
 
-func NewAuth(config *config.Config, clientHttp *httpClient.APIClient) *Auth {
+type Logger interface {
+	Debug(msg string, args ...any)
+	Info(msg string, args ...any)
+	Warn(msg string, args ...any)
+	Error(msg string, args ...any)
+}
+
+type Auth struct {
+	clientHttp Doer
+	config     *config.Config
+	log        Logger
+}
+
+func NewAuth(cfg *config.Config, client Doer, log Logger) *Auth {
 	return &Auth{
-		config:     config,
-		clientHttp: clientHttp,
+		config:     cfg,
+		clientHttp: client,
+		log:        log,
 	}
 }
+
+func (a *Auth) authURL(path string) string {
+	base := strings.TrimRight(a.config.BaseUrl, "/")
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return base
+	}
+	if !strings.HasPrefix(p, "/") {
+		p = "/" + p
+	}
+	return base + p
+}
+
+func (a *Auth) authHeader(c echo.Context) http.Header {
+	h := http.Header{}
+	token := strings.TrimSpace(c.Request().Header.Get("Authorization"))
+	if token != "" {
+		h.Set("Authorization", token)
+	}
+	return h
+}
+
+func (a *Auth) bindJSON(c echo.Context, dst any) bool {
+	if err := c.Bind(dst); err != nil {
+		LoggerFromEcho(c, a.log).Warn("failed to bind request body", logKeyErr, err)
+		_ = common.WriteBadRequest(c, msgInvalidBody)
+		return false
+	}
+	return true
+}
+
+func (a *Auth) doUpstream(c echo.Context, opts httpClient.RequestOptions, op string) (*http.Response, error) {
+	log := LoggerFromEcho(c, a.log)
+
+	httpRes, err := a.clientHttp.MakeRequest(c.Request().Context(), opts)
+	if err != nil {
+		if httpRes != nil {
+			log.Warn("auth upstream returned error",
+				"op", op,
+				logKeyUpstreamURL, opts.URL,
+				logKeyStatus, httpRes.StatusCode,
+				logKeyErr, err,
+			)
+			return httpRes, err
+		}
+
+		log.Error("auth upstream unavailable",
+			"op", op,
+			logKeyUpstreamURL, opts.URL,
+			logKeyErr, err,
+		)
+		return nil, err
+	}
+
+	log.Info("auth request proxied successfully",
+		"op", op,
+		logKeyUpstreamURL, opts.URL,
+		logKeyStatus, httpRes.StatusCode,
+		logKeyAuthorizationHint, strings.TrimSpace(c.Request().Header.Get("Authorization")) != "",
+	)
+
+	return httpRes, nil
+}
+
+// ---- handlers ----
 
 // SendEmailCode обрабатывает запрос на /send-email-code
 // @Summary Отправка кода на email
@@ -31,26 +113,25 @@ func NewAuth(config *config.Config, clientHttp *httpClient.APIClient) *Auth {
 // @Router /gateway/api/v1/auth/send-email-code [post]
 func (a *Auth) SendEmailCode(c echo.Context) error {
 	var req SendEmailCodeRequest
-
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, nil)
+	if ok := a.bindJSON(c, &req); !ok {
+		return nil
 	}
 
-	httpRes, err := a.clientHttp.MakeRequest(
-		c.Request().Context(),
-		httpClient.RequestOptions{
-			Method: http.MethodPost,
-			URL:    a.config.BaseUrl + a.config.V1SendEmailCode,
-			Body:   req,
-		},
-	)
+	opts := httpClient.RequestOptions{
+		Method: http.MethodPost,
+		URL:    a.authURL(a.config.V1SendEmailCode),
+		Body:   req, // keep value type consistent with prior code/tests
+	}
+
+	httpRes, err := a.doUpstream(c, opts, "send_email_code")
 	if err != nil {
 		if httpRes != nil {
-			return c.JSON(httpRes.StatusCode, err.Error())
+			return common.UpstreamError(c, httpRes.StatusCode, http.StatusBadGateway, err.Error())
 		}
-		return c.JSON(http.StatusServiceUnavailable, "Server unavailable")
+		return common.WriteServiceUnavailable(c, msgAuthUnavailable)
 	}
-	return c.JSON(httpRes.StatusCode, "Запрос на отправку кода отправлен")
+
+	return c.JSON(httpRes.StatusCode, msgEmailCodeSent)
 }
 
 // VerifyEmailCode обрабатывает запрос на /verify-email-code
@@ -64,26 +145,26 @@ func (a *Auth) SendEmailCode(c echo.Context) error {
 // @Router /gateway/api/v1/auth/verify-email-code [put]
 func (a *Auth) VerifyEmailCode(c echo.Context) error {
 	var req VerifyEmailCodeRequest
-	var resp VerifyEmailCodeResponse
-
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, nil)
+	if ok := a.bindJSON(c, &req); !ok {
+		return nil
 	}
-	httpRes, err := a.clientHttp.MakeRequest(
-		c.Request().Context(),
-		httpClient.RequestOptions{
-			Method:   http.MethodPut,
-			URL:      a.config.BaseUrl + a.config.V1VerifyEmail,
-			Body:     req,
-			Response: &resp,
-		},
-	)
+
+	var resp VerifyEmailCodeResponse
+	opts := httpClient.RequestOptions{
+		Method:   http.MethodPut,
+		URL:      a.authURL(a.config.V1VerifyEmail),
+		Body:     req,
+		Response: &resp,
+	}
+
+	httpRes, err := a.doUpstream(c, opts, "verify_email_code")
 	if err != nil {
 		if httpRes != nil {
-			return c.JSON(httpRes.StatusCode, err.Error())
+			return common.UpstreamError(c, httpRes.StatusCode, http.StatusBadGateway, err.Error())
 		}
-		return c.JSON(http.StatusServiceUnavailable, "Server unavailable")
+		return common.WriteServiceUnavailable(c, msgAuthUnavailable)
 	}
+
 	return c.JSON(httpRes.StatusCode, resp)
 }
 
@@ -98,26 +179,25 @@ func (a *Auth) VerifyEmailCode(c echo.Context) error {
 // @Router /gateway/api/v1/auth/register [post]
 func (a *Auth) Register(c echo.Context) error {
 	var req RegisterRequest
-
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, nil)
+	if ok := a.bindJSON(c, &req); !ok {
+		return nil
 	}
 
-	httpRes, err := a.clientHttp.MakeRequest(
-		c.Request().Context(),
-		httpClient.RequestOptions{
-			Method: http.MethodPost,
-			URL:    a.config.BaseUrl + a.config.V1Register,
-			Body:   req,
-		},
-	)
+	opts := httpClient.RequestOptions{
+		Method: http.MethodPost,
+		URL:    a.authURL(a.config.V1Register),
+		Body:   req,
+	}
+
+	httpRes, err := a.doUpstream(c, opts, "register")
 	if err != nil {
 		if httpRes != nil {
-			return c.JSON(httpRes.StatusCode, err.Error())
+			return common.UpstreamError(c, httpRes.StatusCode, http.StatusBadGateway, err.Error())
 		}
-		return c.JSON(http.StatusServiceUnavailable, "Server unavailable")
+		return common.WriteServiceUnavailable(c, msgAuthUnavailable)
 	}
-	return c.JSON(httpRes.StatusCode, "Запрос на регистрацию отправлен")
+
+	return c.JSON(httpRes.StatusCode, msgRegistrationSent)
 }
 
 // Login обрабатывает запрос на /login
@@ -131,27 +211,26 @@ func (a *Auth) Register(c echo.Context) error {
 // @Router /gateway/api/v1/auth/login [post]
 func (a *Auth) Login(c echo.Context) error {
 	var req LoginRequest
-	var resp LoginResponse
-
-	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusBadRequest, nil)
+	if ok := a.bindJSON(c, &req); !ok {
+		return nil
 	}
 
-	httpRes, err := a.clientHttp.MakeRequest(
-		c.Request().Context(),
-		httpClient.RequestOptions{
-			Method:   http.MethodPost,
-			URL:      a.config.BaseUrl + a.config.V1Login,
-			Body:     req,
-			Response: &resp,
-		},
-	)
+	var resp LoginResponse
+	opts := httpClient.RequestOptions{
+		Method:   http.MethodPost,
+		URL:      a.authURL(a.config.V1Login),
+		Body:     req,
+		Response: &resp,
+	}
+
+	httpRes, err := a.doUpstream(c, opts, "login")
 	if err != nil {
 		if httpRes != nil {
-			return c.JSON(httpRes.StatusCode, err.Error())
+			return common.UpstreamError(c, httpRes.StatusCode, http.StatusBadGateway, err.Error())
 		}
-		return c.JSON(http.StatusServiceUnavailable, "Server unavailable")
+		return common.WriteServiceUnavailable(c, msgAuthUnavailable)
 	}
+
 	return c.JSON(httpRes.StatusCode, resp)
 }
 
@@ -164,23 +243,20 @@ func (a *Auth) Login(c echo.Context) error {
 // @Failure 422 {string} string "Ошибка валидации"
 // @Router /gateway/api/v1/auth/verify [get]
 func (a *Auth) Verify(c echo.Context) error {
-	headers := http.Header{}
-	headers.Set("Authorization", c.Request().Header.Get("Authorization"))
+	opts := httpClient.RequestOptions{
+		Method:  http.MethodGet,
+		URL:     a.authURL(a.config.V1Verify),
+		Headers: a.authHeader(c),
+	}
 
-	httpRes, err := a.clientHttp.MakeRequest(
-		c.Request().Context(),
-		httpClient.RequestOptions{
-			Method:  http.MethodGet,
-			URL:     a.config.BaseUrl + a.config.V1Verify,
-			Headers: headers,
-		},
-	)
+	httpRes, err := a.doUpstream(c, opts, "verify")
 	if err != nil {
 		if httpRes != nil {
-			return c.JSON(httpRes.StatusCode, err.Error())
+			return common.UpstreamError(c, httpRes.StatusCode, http.StatusBadGateway, err.Error())
 		}
-		return c.JSON(http.StatusServiceUnavailable, "Server unavailable")
+		return common.WriteServiceUnavailable(c, msgAuthUnavailable)
 	}
+
 	return c.JSON(httpRes.StatusCode, nil)
 }
 
@@ -193,23 +269,19 @@ func (a *Auth) Verify(c echo.Context) error {
 // @Failure 422 {string} string "Ошибка валидации"
 // @Router /gateway/api/v1/auth/logout [delete]
 func (a *Auth) Logout(c echo.Context) error {
+	opts := httpClient.RequestOptions{
+		Method:  http.MethodGet,
+		URL:     a.authURL(a.config.V1Verify),
+		Headers: a.authHeader(c),
+	}
 
-	headers := http.Header{}
-	headers.Set("Authorization", c.Request().Header.Get("Authorization"))
-
-	httpRes, err := a.clientHttp.MakeRequest(
-		c.Request().Context(),
-		httpClient.RequestOptions{
-			Method:  http.MethodGet,
-			URL:     a.config.BaseUrl + a.config.V1Verify,
-			Headers: headers,
-		},
-	)
+	httpRes, err := a.doUpstream(c, opts, "logout")
 	if err != nil {
 		if httpRes != nil {
-			return c.JSON(httpRes.StatusCode, err.Error())
+			return common.UpstreamError(c, httpRes.StatusCode, http.StatusBadGateway, err.Error())
 		}
-		return c.JSON(http.StatusServiceUnavailable, "Server unavailable")
+		return common.WriteServiceUnavailable(c, msgAuthUnavailable)
 	}
+
 	return c.JSON(httpRes.StatusCode, nil)
 }

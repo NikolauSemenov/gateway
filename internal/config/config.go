@@ -5,41 +5,42 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Env string `env:"ENV" env-default:"local" env:"ENV"`
+	LogLevel string `env:"LOG_LEVEL"`
 	HTTPServer
 	AuthConfig
 	NoteFlowConfig
 }
 
 type AuthConfig struct {
-	BaseUrl         string `env:"BASE_URL" env-default:"http://auth:80/auth/api"`
-	V1Register      string `env:"V1_REGISTER" env-default:"/v1/register"`
-	V1Login         string `env:"V1_LOGIN" env-default:"/v1/login"`
-	V1Verify        string `env:"V1_LOGIN" env-default:"/v1/verify"`
-	V1Logout        string `env:"V1_LOGOUT" env-default:"/v1/logout"`
-	V1SendEmailCode string `env:"V1_SEND_EMAIL_CODE" env-default:"/v1/send-email-code"`
-	V1VerifyEmail   string `env:"V1_VERIFY_EMAIL" env-default:"/v1/verify-email-code"`
+	BaseUrl         string `env:"AUTH_BASE_URL"`
+	V1Register      string `env:"AUTH_V1_REGISTER"`
+	V1Login         string `env:"AUTH_V1_LOGIN"`
+	V1Verify        string `env:"AUTH_V1_VERIFY"`
+	V1Logout        string `env:"AUTH_V1_LOGOUT"`
+	V1SendEmailCode string `env:"AUTH_V1_SEND_EMAIL_CODE"`
+	V1VerifyEmail   string `env:"AUTH_V1_VERIFY_EMAIL"`
 }
 
 type NoteFlowConfig struct {
-	BaseUrlNotes  string `env:"BASE_URL" env-default:"http://note-flow:80/note-flow/api"`
-	V1Notes       string `env:"V1_REGISTER" env-default:"/v1/notes"`
-	V1Note        string `env:"V1_NOTE" env-default:"/v1/note"`
-	V1NoteActive  string `env:"V1_NOTE_ACTIVE" env-default:"/v1/note/active"`
-	V1NoteLike    string `env:"V1_NOTE_LIKE" env-default:"/v1/note/like"`
-	V1NoteComment string `env:"V1_NOTE_COMMENT" env-default:"/v1/note/comment"`
+	BaseUrlNotes  string `env:"NOTE_FLOW_BASE_URL"`
+	V1Notes       string `env:"NOTE_FLOW_V1_NOTES"`
+	V1Note        string `env:"NOTE_FLOW_V1_NOTE"`
+	V1NoteActive  string `env:"NOTE_FLOW_V1_NOTE_ACTIVE"`
+	V1NoteLike    string `env:"NOTE_FLOW_V1_NOTE_LIKE"`
+	V1NoteComment string `env:"NOTE_FLOW_V1_NOTE_COMMENT"`
 }
 
 type HTTPServer struct {
-	Address     string        `env-default:"0.0.0.0:8000" env:"ADDRESS"`
-	Timeout     time.Duration `env-default:"5s" env:"TIMEOUT"`
-	IdleTimeout time.Duration `env-default:"60s" env:"IDLE_TIMEOUT"`
-	Prefix      string        `env:"API_PREFIX" env-default:"gateway"`
-	AppVersion  string        `env:"APP_VERSION" env-default:"v1"`
-	SizeLimit   int64         `env:"LIMIT_READ" env-default:"65536"`
+	Address     string        `env:"ADDRESS"`
+	Timeout     time.Duration `env:"TIMEOUT"`
+	IdleTimeout time.Duration `env:"IDLE_TIMEOUT"`
+	Prefix      string        `env:"API_PREFIX"`
+	AppVersion  string        `env:"APP_VERSION"`
+	SizeLimit   int64         `env:"LIMIT_READ"`
 }
 
 func (h *HTTPServer) APIPrefix() string {
@@ -47,6 +48,8 @@ func (h *HTTPServer) APIPrefix() string {
 }
 
 func GetConfig() *Config {
+	_ = godotenv.Load()
+
 	var cfg Config
 	errEnv := cleanenv.ReadEnv(&cfg)
 	if errEnv != nil {

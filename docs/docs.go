@@ -570,6 +570,23 @@ const docTemplate = `{
                 }
             }
         },
+        "note_flow.CommentsRequest": {
+            "type": "object",
+            "properties": {
+                "comment_id": {
+                    "type": "integer"
+                },
+                "text": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "user_name": {
+                    "type": "string"
+                }
+            }
+        },
         "note_flow.CreateNoteRequest": {
             "type": "object",
             "properties": {
@@ -633,17 +650,11 @@ const docTemplate = `{
         "note_flow.NotesResponse": {
             "type": "object",
             "properties": {
-                "comment_by_user_id": {
-                    "type": "integer"
-                },
-                "comment_by_user_name": {
-                    "type": "string"
-                },
-                "comment_id": {
-                    "type": "integer"
-                },
-                "comment_text": {
-                    "type": "string"
+                "comments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/note_flow.CommentsRequest"
+                    }
                 },
                 "content": {
                     "type": "string"
