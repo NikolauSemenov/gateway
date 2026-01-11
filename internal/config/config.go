@@ -25,7 +25,7 @@ type AuthConfig struct {
 }
 
 type NoteFlowConfig struct {
-	BaseUrlNotes  string `env:"BASE_URL" env-default:"http://note-flow:8000/note-flow/api"`
+	BaseUrlNotes  string `env:"BASE_URL" env-default:"http://note-flow:80/note-flow/api"`
 	V1Notes       string `env:"V1_REGISTER" env-default:"/v1/notes"`
 	V1Note        string `env:"V1_NOTE" env-default:"/v1/note"`
 	V1NoteActive  string `env:"V1_NOTE_ACTIVE" env-default:"/v1/note/active"`
