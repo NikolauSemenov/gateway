@@ -15,7 +15,7 @@ type Config struct {
 }
 
 type AuthConfig struct {
-	BaseUrl         string `env:"BASE_URL" env-default:"http://auth:800/auth/api"`
+	BaseUrl         string `env:"BASE_URL" env-default:"http://auth:8000/auth/api"`
 	V1Register      string `env:"V1_REGISTER" env-default:"/v1/register"`
 	V1Login         string `env:"V1_LOGIN" env-default:"/v1/login"`
 	V1Verify        string `env:"V1_LOGIN" env-default:"/v1/verify"`
