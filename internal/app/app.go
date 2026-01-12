@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -54,6 +55,10 @@ func NewApp() (*App, error) {
 }
 
 func (app *App) Run() error {
-	app.log.Info("starting http server")
 	return app.web.Start(app.configApp.HTTPServer.Address)
+}
+
+func (app *App) Shutdown(ctx context.Context) error {
+	app.log.Info("shutting down application")
+	return app.web.Shutdown(ctx)
 }
