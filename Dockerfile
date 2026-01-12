@@ -7,8 +7,9 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o collector ./cmd/worker
+RUN go build -o buildApp ./cmd/app
 
-EXPOSE 8000
+EXPOSE 8080
 
-CMD ["./collector"]
+# Команда запуска
+CMD ["./buildApp"]
