@@ -246,6 +246,7 @@ func TestAuth_VerifyEmailCode_Success_DecodesResponseAndReturnsIt(t *testing.T) 
 				TokenType:   "Bearer",
 				UserName:    "John",
 				LastName:    "Doe",
+				UserID:      "user123",
 			}
 			return httpResponse(http.StatusOK, ""), nil
 		},
@@ -273,7 +274,7 @@ func TestAuth_VerifyEmailCode_Success_DecodesResponseAndReturnsIt(t *testing.T) 
 
 	var out VerifyEmailCodeResponse
 	decodeEchoJSONBody(t, rec, &out)
-	if out.AccessToken != "tkn" || out.TokenType != "Bearer" || out.UserName != "John" || out.LastName != "Doe" {
+	if out.AccessToken != "tkn" || out.TokenType != "Bearer" || out.UserName != "John" || out.LastName != "Doe" || out.UserID != "user123" {
 		t.Fatalf("unexpected response: %+v", out)
 	}
 }
@@ -299,6 +300,7 @@ func TestAuth_Login_Success_DecodesResponseAndReturnsIt(t *testing.T) {
 				TokenType:   "Bearer",
 				UserName:    "John",
 				LastName:    "Doe",
+				UserID:      "user456",
 			}
 			return httpResponse(http.StatusOK, ""), nil
 		},
@@ -322,7 +324,7 @@ func TestAuth_Login_Success_DecodesResponseAndReturnsIt(t *testing.T) {
 
 	var out LoginResponse
 	decodeEchoJSONBody(t, rec, &out)
-	if out.AccessToken != "tkn" || out.TokenType != "Bearer" || out.UserName != "John" || out.LastName != "Doe" {
+	if out.AccessToken != "tkn" || out.TokenType != "Bearer" || out.UserName != "John" || out.LastName != "Doe" || out.UserID != "user456" {
 		t.Fatalf("unexpected response: %+v", out)
 	}
 }

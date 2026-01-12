@@ -597,6 +597,9 @@ const docTemplate = `{
                 "token_type": {
                     "type": "string"
                 },
+                "user_id": {
+                    "type": "string"
+                },
                 "user_name": {
                     "type": "string"
                 }
@@ -651,6 +654,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "token_type": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 },
                 "user_name": {
