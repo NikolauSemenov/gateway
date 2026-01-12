@@ -27,4 +27,6 @@ swag_init:
 	swag init -g $(CMD_DIR)/main.go --output docs
 
 deploy:
-    eval $(minikube docker-env) && docker build -t gateway:latest . && kubectl apply -f k8s
+	@eval $$(minikube docker-env) && \
+		docker build -t collector:latest . && \
+		kubectl apply -f k8s/deployment.yaml
