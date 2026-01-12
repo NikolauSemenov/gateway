@@ -32,6 +32,8 @@ type HandlersNoteFlow interface {
 	CreateNote(c echo.Context) error
 	NoteLike(c echo.Context) error
 	NoteComments(c echo.Context) error
+	DeleteNote(c echo.Context) error
+	DeleteComment(c echo.Context) error
 }
 
 type Doer interface {
@@ -83,5 +85,7 @@ func RegisterRoutes(
 	noteGroup.POST("/note", handlerNoteFlow.CreateNote)
 	noteGroup.POST("/note/like", handlerNoteFlow.NoteLike)
 	noteGroup.POST("/note/comment", handlerNoteFlow.NoteComments)
+	noteGroup.DELETE("/note/:note_id", handlerNoteFlow.DeleteNote)
+	noteGroup.DELETE("/note/comment/:comment_id", handlerNoteFlow.DeleteComment)
 
 }

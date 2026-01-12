@@ -303,6 +303,35 @@ paths:
       tags:
       - note-flow
   /gateway/api/v1/note-flow/note/{note_id}:
+    delete:
+      description: Проксирует запрос по пути /note/{note_id}
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID заметки
+        in: path
+        name: note_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Неверный ID
+          schema:
+            type: string
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Удалить заметку
+      tags:
+      - note-flow
     get:
       description: Проксирует запрос по пути /note/{note_id}
       parameters:
@@ -383,6 +412,36 @@ paths:
           schema:
             type: string
       summary: Создать комментарий
+      tags:
+      - Comments
+  /gateway/api/v1/note-flow/note/comment/{comment_id}:
+    delete:
+      description: Проксирует запрос по пути /note/comment/{comment_id}
+      parameters:
+      - description: Bearer token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: ID комментария
+        in: path
+        name: comment_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Неверный ID
+          schema:
+            type: string
+        "422":
+          description: Ошибка валидации
+          schema:
+            type: string
+      summary: Удалить комментарий
       tags:
       - Comments
   /gateway/api/v1/note-flow/note/like:

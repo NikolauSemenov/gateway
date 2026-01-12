@@ -26,6 +26,10 @@ func (handlersNoteFlowStub) NoteActive(c echo.Context) error   { return c.NoCont
 func (handlersNoteFlowStub) CreateNote(c echo.Context) error   { return c.NoContent(http.StatusTeapot) }
 func (handlersNoteFlowStub) NoteLike(c echo.Context) error     { return c.NoContent(http.StatusTeapot) }
 func (handlersNoteFlowStub) NoteComments(c echo.Context) error { return c.NoContent(http.StatusTeapot) }
+func (handlersNoteFlowStub) DeleteNote(c echo.Context) error   { return c.NoContent(http.StatusTeapot) }
+func (handlersNoteFlowStub) DeleteComment(c echo.Context) error {
+	return c.NoContent(http.StatusTeapot)
+}
 
 func TestRegisterRoutes_RegistersHealthEndpoint(t *testing.T) {
 	e := echo.New()
@@ -77,18 +81,20 @@ func TestRegisterRoutes_RegistersAuthAndNoteFlowRoutes(t *testing.T) {
 	routes := e.Routes()
 
 	need := map[string]struct{}{
-		"GET /gateway/api/v1/health":                  {},
-		"POST /gateway/api/v1/auth/send-email-code":   {},
-		"PUT /gateway/api/v1/auth/verify-email-code":  {},
-		"POST /gateway/api/v1/auth/register":          {},
-		"POST /gateway/api/v1/auth/login":             {},
-		"DELETE /gateway/api/v1/auth/logout":          {},
-		"GET /gateway/api/v1/note-flow/notes":         {},
-		"GET /gateway/api/v1/note-flow/note/:note_id": {},
-		"PUT /gateway/api/v1/note-flow/note/active":   {},
-		"POST /gateway/api/v1/note-flow/note":         {},
-		"POST /gateway/api/v1/note-flow/note/like":    {},
-		"POST /gateway/api/v1/note-flow/note/comment": {},
+		"GET /gateway/api/v1/health":                                {},
+		"POST /gateway/api/v1/auth/send-email-code":                 {},
+		"PUT /gateway/api/v1/auth/verify-email-code":                {},
+		"POST /gateway/api/v1/auth/register":                        {},
+		"POST /gateway/api/v1/auth/login":                           {},
+		"DELETE /gateway/api/v1/auth/logout":                        {},
+		"GET /gateway/api/v1/note-flow/notes":                       {},
+		"GET /gateway/api/v1/note-flow/note/:note_id":               {},
+		"PUT /gateway/api/v1/note-flow/note/active":                 {},
+		"POST /gateway/api/v1/note-flow/note":                       {},
+		"POST /gateway/api/v1/note-flow/note/like":                  {},
+		"POST /gateway/api/v1/note-flow/note/comment":               {},
+		"DELETE /gateway/api/v1/note-flow/note/:note_id":            {},
+		"DELETE /gateway/api/v1/note-flow/note/comment/:comment_id": {},
 	}
 
 	for _, r := range routes {

@@ -404,3 +404,87 @@ func (a *NoteFlow) NoteComments(c echo.Context) error {
 
 	return c.JSON(httpRes.StatusCode, resp)
 }
+
+// DeleteNote обрабатывает запрос на /note/{note_id}
+// @Summary Удалить заметку
+// @Description Проксирует запрос по пути /note/{note_id}
+// @Tags note-flow
+// @Param Authorization header string true "Bearer token"
+// @Param note_id path int true "ID заметки"
+// @Success 200 {string} string "OK"
+// @Failure 400 {string} string "Неверный ID"
+// @Failure 422 {string} string "Ошибка валидации"
+// @Router /gateway/api/v1/note-flow/note/{note_id} [delete]
+func (a *NoteFlow) DeleteNote(c echo.Context) error {
+	log := a.logger(c)
+
+	uc, err := a.buildUserContext(c)
+	if err != nil {
+		log.Warn("user not authorized for delete note", logKeyErr, err)
+		return err
+	}
+
+	noteID := strings.TrimSpace(c.Param("note_id"))
+	if noteID == "" {
+		return common.WriteBadRequest(c, "Invalid note_id")
+	}
+
+	opts := httpClient.RequestOptions{
+		Method:  http.MethodDelete,
+		URL:     joinURL(a.config.BaseUrlNotes, a.config.V1Note) + "/" + url.PathEscape(noteID),
+		Headers: uc.headers,
+		Query:   uc.withUserQuery(nil),
+	}
+
+	httpRes, err := a.doUpstream(c, opts, "delete_note", logKeyNoteID, noteID)
+	if err != nil {
+		if httpRes != nil {
+			return common.UpstreamError(c, httpRes.StatusCode, http.StatusBadGateway, err.Error())
+		}
+		return common.WriteServiceUnavailable(c, msgNoteFlowUnavailable)
+	}
+
+	return c.JSON(httpRes.StatusCode, nil)
+}
+
+// DeleteComment обрабатывает запрос на /note/comment/{comment_id}
+// @Summary Удалить комментарий
+// @Description Проксирует запрос по пути /note/comment/{comment_id}
+// @Tags Comments
+// @Param Authorization header string true "Bearer token"
+// @Param comment_id path int true "ID комментария"
+// @Success 200 {string} string "OK"
+// @Failure 400 {string} string "Неверный ID"
+// @Failure 422 {string} string "Ошибка валидации"
+// @Router /gateway/api/v1/note-flow/note/comment/{comment_id} [delete]
+func (a *NoteFlow) DeleteComment(c echo.Context) error {
+	log := a.logger(c)
+
+	uc, err := a.buildUserContext(c)
+	if err != nil {
+		log.Warn("user not authorized for delete comment", logKeyErr, err)
+		return err
+	}
+
+	commentID := strings.TrimSpace(c.Param("comment_id"))
+	if commentID == "" {
+		return common.WriteBadRequest(c, "Invalid comment_id")
+	}
+
+	opts := httpClient.RequestOptions{
+		Method:  http.MethodDelete,
+		URL:     joinURL(a.config.BaseUrlNotes, a.config.V1NoteComment) + "/" + url.PathEscape(commentID),
+		Headers: uc.headers,
+		Query:   uc.withUserQuery(nil),
+	}
+
+	httpRes, err := a.doUpstream(c, opts, "delete_comment", "comment_id", commentID)
+	if err != nil {
+		if httpRes != nil {
+			return common.UpstreamError(c, httpRes.StatusCode, http.StatusBadGateway, err.Error())
+		}
+		return common.WriteServiceUnavailable(c, msgNoteFlowUnavailable)
+	}
+
+	return c.JSON(httpRes.StatusCode, nil)
+}
