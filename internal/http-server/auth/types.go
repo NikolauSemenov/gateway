@@ -13,7 +13,7 @@ type LoginResponse struct {
 	TokenType   string `json:"token_type"`
 	UserName    string `json:"user_name"`
 	LastName    string `json:"last_name"`
-	UserID      string `json:"user_id"`
+	UserID      int    `json:"user_id"`
 }
 
 type LoginRequest struct {
@@ -35,7 +35,7 @@ type VerifyEmailCodeResponse struct {
 	TokenType   string `json:"token_type"`
 	UserName    string `json:"user_name"`
 	LastName    string `json:"last_name"`
-	UserID      string `json:"user_id"`
+	UserID      int    `json:"user_id"`
 }
 
 type VerifyRequest struct {

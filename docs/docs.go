@@ -598,7 +598,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "user_name": {
                     "type": "string"
@@ -657,7 +657,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "user_name": {
                     "type": "string"
