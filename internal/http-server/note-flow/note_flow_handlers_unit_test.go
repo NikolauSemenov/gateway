@@ -138,7 +138,7 @@ func TestNoteFlow_Notes_Success_ProxiesWithHeadersAndUserQuery(t *testing.T) {
 				t.Fatalf("expected Response to be *[]NotesResponse, got %T", r.Response)
 			}
 			*dst = []NotesResponse{
-				{Id: 1, Title: "t1", Content: "c1", UserId: 11, FullName: "FN", CreatedAt: "now", Likes: 0, Comments: nil},
+				{Id: 1, Title: "t1", Content: "c1", UserId: 11, UserFullName: "FN", CreatedAt: "now", Likes: 0, Comments: nil},
 			}
 
 			return httpResponse(http.StatusOK, ""), nil

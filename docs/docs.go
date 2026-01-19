@@ -738,6 +738,9 @@ const docTemplate = `{
             "properties": {
                 "Id": {
                     "type": "integer"
+                },
+                "comment_id": {
+                    "type": "integer"
                 }
             }
         },

@@ -23,14 +23,14 @@ type CommentsRequest struct {
 }
 
 type NotesResponse struct {
-	Id        int                `json:"id"`
-	Title     string             `json:"title"`
-	Content   string             `json:"content"`
-	UserId    int                `json:"user_id"`
-	FullName  string             `json:"full_name"`
-	CreatedAt string             `json:"created_at"`
-	Likes     int                `json:"likes"`
-	Comments  *[]CommentsRequest `json:"comments"`
+	Id           int                `json:"id"`
+	Title        string             `json:"title"`
+	Content      string             `json:"content"`
+	UserId       int                `json:"user_id"`
+	UserFullName string             `json:"user_full_name"`
+	CreatedAt    string             `json:"created_at"`
+	Likes        int                `json:"likes"`
+	Comments     *[]CommentsRequest `json:"comments"`
 }
 
 type NoteRequest struct {

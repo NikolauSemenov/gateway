@@ -105,6 +105,8 @@ definitions:
     properties:
       Id:
         type: integer
+      comment_id:
+        type: integer
     type: object
   note_flow.NotesResponse:
     properties:
