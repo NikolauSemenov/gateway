@@ -89,7 +89,7 @@ func TestAuth_SendEmailCode_BindError_Returns400(t *testing.T) {
 		return nil, nil
 	}}
 
-	h := NewAuth(cfg, m, nil)
+	h := NewAuth(cfg, m, nil, nil)
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/auth/send-email-code", bytes.NewReader([]byte("{")))
@@ -124,7 +124,7 @@ func TestAuth_SendEmailCode_Success_ProxiesAndReturnsMessage(t *testing.T) {
 		},
 	}
 
-	h := NewAuth(cfg, m, nil)
+	h := NewAuth(cfg, m, nil, nil)
 
 	_, c, rec := newEchoJSONContext(http.MethodPost, "/gateway/api/v1/auth/send-email-code", `{"email":"a@b.c"}`)
 
@@ -178,7 +178,7 @@ func TestAuth_SendEmailCode_UpstreamErrorWithResponse_ReturnsUpstreamStatusAndEr
 		},
 	}
 
-	h := NewAuth(cfg, m, nil)
+	h := NewAuth(cfg, m, nil, nil)
 
 	_, c, rec := newEchoJSONContext(http.MethodPost, "/gateway/api/v1/auth/send-email-code", `{"email":"a@b.c"}`)
 
@@ -209,7 +209,7 @@ func TestAuth_SendEmailCode_UpstreamErrorNoResponse_Returns503(t *testing.T) {
 		},
 	}
 
-	h := NewAuth(cfg, m, nil)
+	h := NewAuth(cfg, m, nil, nil)
 
 	_, c, rec := newEchoJSONContext(http.MethodPost, "/gateway/api/v1/auth/send-email-code", `{"email":"a@b.c"}`)
 
@@ -252,7 +252,7 @@ func TestAuth_VerifyEmailCode_Success_DecodesResponseAndReturnsIt(t *testing.T) 
 		},
 	}
 
-	h := NewAuth(cfg, m, nil)
+	h := NewAuth(cfg, m, nil, nil)
 
 	_, c, rec := newEchoJSONContext(http.MethodPut, "/gateway/api/v1/auth/verify-email-code", `{"email":"a@b.c","code":"1234"}`)
 
@@ -306,7 +306,7 @@ func TestAuth_Login_Success_DecodesResponseAndReturnsIt(t *testing.T) {
 		},
 	}
 
-	h := NewAuth(cfg, m, nil)
+	h := NewAuth(cfg, m, nil, nil)
 
 	_, c, rec := newEchoJSONContext(http.MethodPost, "/gateway/api/v1/auth/login", `{"login":"u","password":"p"}`)
 
@@ -362,7 +362,7 @@ func TestAuth_Verify_SetsAuthorizationHeaderAndReturnsStatus(t *testing.T) {
 		},
 	}
 
-	h := NewAuth(cfg, m, nil)
+	h := NewAuth(cfg, m, nil, nil)
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/gateway/api/v1/auth/verify", nil)
@@ -393,7 +393,7 @@ func TestAuth_Register_Success_ReturnsMessage(t *testing.T) {
 		},
 	}
 
-	h := NewAuth(cfg, m, nil)
+	h := NewAuth(cfg, m, nil, nil)
 
 	_, c, rec := newEchoJSONContext(http.MethodPost, "/gateway/api/v1/auth/register", `{"login":"u","user_name":"n","last_name":"l","password":"p","email":"e@e.e"}`)
 
@@ -412,9 +412,8 @@ func TestAuth_Register_Success_ReturnsMessage(t *testing.T) {
 	}
 }
 
-// Note: Logout currently calls GET to /v1/verify (same as Verify), which looks like a bug.
-// This test documents current behavior so changes are explicit.
-func TestAuth_Logout_CurrentBehavior_CallsVerifyEndpoint(t *testing.T) {
+// Logout should call DELETE to /v1/logout.
+func TestAuth_Logout_CallsLogoutEndpoint(t *testing.T) {
 	cfg := &config.Config{
 		AuthConfig: config.AuthConfig{
 			BaseUrl:  "http://auth.local",
@@ -428,8 +427,11 @@ func TestAuth_Logout_CurrentBehavior_CallsVerifyEndpoint(t *testing.T) {
 	m := &mockDoer{
 		t: t,
 		makeRequestFn: func(ctx context.Context, r httpClient.RequestOptions) (*http.Response, error) {
-			if r.URL != "http://auth.local/v1/verify" {
-				t.Fatalf("expected Logout to call %q (current behavior), got %q", "http://auth.local/v1/verify", r.URL)
+			if r.Method != http.MethodDelete {
+				t.Fatalf("expected Logout to use method %q, got %q", http.MethodDelete, r.Method)
+			}
+			if r.URL != "http://auth.local/v1/logout" {
+				t.Fatalf("expected Logout to call %q, got %q", "http://auth.local/v1/logout", r.URL)
 			}
 			if r.Headers == nil || r.Headers.Get("Authorization") != token {
 				got := ""
@@ -442,7 +444,7 @@ func TestAuth_Logout_CurrentBehavior_CallsVerifyEndpoint(t *testing.T) {
 		},
 	}
 
-	h := NewAuth(cfg, m, nil)
+	h := NewAuth(cfg, m, nil, nil)
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodDelete, "/gateway/api/v1/auth/logout", nil)

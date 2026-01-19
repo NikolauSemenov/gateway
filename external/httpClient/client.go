@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"gateway/internal/config"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -36,9 +37,31 @@ func NewAPIClient(configApp *config.Config) *APIClient {
 	cfg.Timeout = timeout
 	cfg.SizeLimit = sizeLimit
 
+	// Harden transport defaults for reliability under load (pooling, timeouts, keep-alive).
+	// NOTE: http.Client.Timeout is an overall per-request deadline, but it's still useful to set lower-level timeouts too.
+	dialer := &net.Dialer{
+		Timeout:   3 * time.Second,
+		KeepAlive: 30 * time.Second,
+	}
+
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.DialContext(ctx, network, addr)
+		},
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          200,
+		MaxIdleConnsPerHost:   50,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   5 * time.Second,
+		ResponseHeaderTimeout: 5 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	return &APIClient{
 		http: &http.Client{
-			Timeout: timeout,
+			Timeout:   timeout,
+			Transport: transport,
 		},
 		configApp: &cfg,
 	}

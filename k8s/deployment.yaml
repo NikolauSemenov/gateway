@@ -21,6 +21,31 @@ spec:
             - name: LOG_LEVEL
               value: "INFO"
 
+            - name: SWAGGER_ENABLED
+              value: "false"
+
+            - name: CORS_ALLOW_ORIGINS
+              value: ""
+            - name: CORS_ALLOW_METHODS
+              value: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+            - name: CORS_ALLOW_HEADERS
+              value: "Authorization,Content-Type,Accept,X-Request-ID"
+            - name: CORS_EXPOSE_HEADERS
+              value: "X-Request-ID"
+            - name: CORS_ALLOW_CREDENTIALS
+              value: "false"
+            - name: CORS_MAX_AGE
+              value: "600"
+
+            - name: REDIS_ADDR
+              value: "redis.db.svc.cluster.local:6379"
+            - name: REDIS_PASSWORD
+              value: ""
+            - name: REDIS_DB
+              value: "0"
+            - name: JWT_VERIFY_CACHE_TTL
+              value: "60s"
+
             - name: ADDRESS
               value: "0.0.0.0:8000"
             - name: TIMEOUT

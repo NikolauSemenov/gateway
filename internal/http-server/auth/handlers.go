@@ -8,8 +8,10 @@ import (
 	"gateway/external/httpClient"
 	"gateway/internal/config"
 	"gateway/internal/http-server/common"
+	myMiddleware "gateway/internal/http-server/middleware"
 
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 )
 
 type Doer interface {
@@ -27,13 +29,16 @@ type Auth struct {
 	clientHttp Doer
 	config     *config.Config
 	log        Logger
+
+	redis *redis.Client
 }
 
-func NewAuth(cfg *config.Config, client Doer, log Logger) *Auth {
+func NewAuth(cfg *config.Config, client Doer, log Logger, rdb *redis.Client) *Auth {
 	return &Auth{
 		config:     cfg,
 		clientHttp: client,
 		log:        log,
+		redis:      rdb,
 	}
 }
 
@@ -269,9 +274,10 @@ func (a *Auth) Verify(c echo.Context) error {
 // @Failure 422 {string} string "Ошибка валидации"
 // @Router /gateway/api/v1/auth/logout [delete]
 func (a *Auth) Logout(c echo.Context) error {
+	// 1) Call upstream logout endpoint.
 	opts := httpClient.RequestOptions{
-		Method:  http.MethodGet,
-		URL:     a.authURL(a.config.V1Verify),
+		Method:  http.MethodDelete,
+		URL:     a.authURL(a.config.V1Logout),
 		Headers: a.authHeader(c),
 	}
 
@@ -283,5 +289,12 @@ func (a *Auth) Logout(c echo.Context) error {
 		return common.WriteServiceUnavailable(c, msgAuthUnavailable)
 	}
 
-	return c.JSON(httpRes.StatusCode, nil)
+	// 2) Invalidate JWT verify cache (best-effort) so token isn't treated as valid by the gateway cache.
+	_ = myMiddleware.InvalidateJWTVerifyCache(
+		c.Request().Context(),
+		a.redis,
+		strings.TrimSpace(c.Request().Header.Get("Authorization")),
+	)
+
+	return c.NoContent(httpRes.StatusCode)
 }

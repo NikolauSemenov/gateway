@@ -45,7 +45,9 @@ func TestRegisterRoutes_RegistersHealthEndpoint(t *testing.T) {
 		handlersNoteFlowStub{},
 		client,
 		"http://auth.local",
-		nil,
+		nil, // cfg
+		nil, // rdb
+		nil, // logger
 	)
 
 	req := httptest.NewRequest(http.MethodGet, "/gateway/api/v1/health", nil)
@@ -75,7 +77,9 @@ func TestRegisterRoutes_RegistersAuthAndNoteFlowRoutes(t *testing.T) {
 		handlersNoteFlowStub{},
 		client,
 		"http://auth.local",
-		nil,
+		nil, // cfg
+		nil, // rdb
+		nil, // logger
 	)
 
 	routes := e.Routes()
